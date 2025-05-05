@@ -50,6 +50,7 @@ $F90 -o obsdata obsdata.f90
 $F90 -o residuals residuals.f90
 $F90 -o synthdata synthdata.f90
 $F90 -o scorrect scorrect.f90
+$F90 -o mprop mprop.f90
 ##################################################
 #
 # Move all executables to  directory ../bin 
@@ -59,6 +60,7 @@ mv arraygen frechgen gmtslice ../bin
 mv grid3dg invert3d moddata ../bin
 mv obsdata residuals synthdata ../bin
 mv scorrect ../bin
+mv mprop ../bin
 ##################################################
 #
 # Enter subdirectory "fmcode", compile
