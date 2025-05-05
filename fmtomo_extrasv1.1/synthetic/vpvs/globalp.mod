@@ -1,0 +1,56 @@
+GFORTRAN module created from frvpvs.f90 on Tue Mar 20 16:14:45 2012
+MD5:b9d20b5b98e0ed7b36d8116701789905 -- If you edit this, you'll get what you deserve.
+
+(() () () () () () () () () () () () () () () () () () () () () () () ()
+() () ())
+
+()
+
+()
+
+()
+
+()
+
+(2 'dvpvs' 'globalp' 'dvpvs' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 4 0 0 REAL ()) 0 0 () (3
+DEFERRED () () () () () ()) 0 () () 0 0)
+3 'dvs' 'globalp' 'dvs' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN ALLOCATABLE DIMENSION) (REAL 4 0 0 REAL ()) 0 0 () (3 DEFERRED ()
+() () () () ()) 0 () () 0 0)
+4 'globalp' 'globalp' 'globalp' 1 ((MODULE UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN UNKNOWN) (UNKNOWN 0 0 0 UNKNOWN ()) 0 0 () () 0 () () 0 0)
+5 'ui' 'globalp' 'ui' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN DIMENSION) (REAL 4 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (
+INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0
+'4')) 0 () () 0 0)
+6 'uio' 'globalp' 'uio' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN DIMENSION) (REAL 4 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (
+INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0
+'4')) 0 () () 0 0)
+7 'vi' 'globalp' 'vi' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN DIMENSION) (REAL 4 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (
+INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0
+'4')) 0 () () 0 0)
+8 'vio' 'globalp' 'vio' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN DIMENSION) (REAL 4 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (
+INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0
+'4')) 0 () () 0 0)
+9 'vp' 'globalp' 'vp' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN ALLOCATABLE DIMENSION) (REAL 4 0 0 REAL ()) 0 0 () (3 DEFERRED ()
+() () () () ()) 0 () () 0 0)
+10 'vs' 'globalp' 'vs' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN ALLOCATABLE DIMENSION) (REAL 4 0 0 REAL ()) 0 0 () (3 DEFERRED ()
+() () () () ()) 0 () () 0 0)
+11 'wi' 'globalp' 'wi' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN DIMENSION) (REAL 4 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (
+INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0
+'4')) 0 () () 0 0)
+12 'wio' 'globalp' 'wio' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN UNKNOWN DIMENSION) (REAL 4 0 0 REAL ()) 0 0 () (1 EXPLICIT (
+CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0
+INTEGER ()) 0 '4')) 0 () () 0 0)
+)
+
+('dvpvs' 0 2 'dvs' 0 3 'globalp' 0 4 'ui' 0 5 'uio' 0 6 'vi' 0 7 'vio' 0
+8 'vp' 0 9 'vs' 0 10 'wi' 0 11 'wio' 0 12)
