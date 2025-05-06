@@ -189,7 +189,8 @@ c
 	logical*1	ln_work(*)
 	logical		nnwrite
 	logical		clockwise
-	logical		ldummy
+	logical		ldummy(1)
+	integer		subset(1)
         logical         timing
 
         common/nnswitches/nnwrite,lud
@@ -218,12 +219,12 @@ c		  write(*,*)' X sort done'
  		  write(*,*)' of first co-ordinate'
 
 	      end if
-
+          subset=0
 c                                       calculate Delaunay using delaun 
  
               call delaun (points,np,neighbour,vertices,nt,nt_max,
      &                     vis_tlist,vis_elist,add_tlist,eps,nv_max,
-     &                     0,ldummy,0,0,0)
+     &                     0,ldummy,0,0,subset)
 
 	   else
 c                                       read in Delaunay vertices
