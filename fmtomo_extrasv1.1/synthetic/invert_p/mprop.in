@@ -1,0 +1,10 @@
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c Input parameters for computing model roughness
+c and model variance
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+vgrids.in                  c: Input file of velocity vertices
+vgridsref.in               c: Reference velocity field
+interfaces.in              c: File containing interface information
+1                             c: Target layer
+5    5    5                   c: Dicing level in r,theta,phi
+6371.0                        c: Earth radius in km

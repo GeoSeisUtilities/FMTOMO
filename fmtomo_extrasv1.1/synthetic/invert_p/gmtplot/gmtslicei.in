@@ -56,7 +56,7 @@ boundgc.gmt                 c: GMT plotting bounds for great circle slice
 ccccccccccccccccccccccccccccccccccccccccccccccc
 c Velocity grid parameters
 ccccccccccccccccccccccccccccccccccccccccccccccc
-2                           c: 0=absolute, 1=relative velocity, 2=perturbation %
+1                           c: 0=absolute, 1=relative velocity, 2=perturbation %
 20  20                      c: Dicing in theta,phi
 grid2dvd.z                  c: GMT output file for depth slice
 20  20                      c: Dicing in r,theta

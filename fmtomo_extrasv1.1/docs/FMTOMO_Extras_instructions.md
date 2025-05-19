@@ -28,7 +28,7 @@ To install, edit line 18 of the <u>*compile_all*</u> script so that it points to
 
 Two examples have been provided with the distribution: observed and synthetic; in the former case, we are dealing with an observed P-wave and S-wave dataset, and in the latter case, the corresponding checkerboard resolution test. The directory structure of these examples is as follows:
 
--  In the root directory, there are three subdirectories plus a number of files.
+- In the root directory, there are three subdirectories plus a number of files.
 
 - *invert_p* contains all the FMTOMO files required to do an inversion of the P-wave data for Vp-structure. However, the additional element is that instead of <u>*tomo3d*</u>, a script called <u>*tomo3di*</u> is used, which calls the program <u>*gridloc*</u> to perform a non-linear inversion for source relocation between each inversion step for velocity structure. Thus, executing <u>*tomo3di*</u> will invert all P-arrival times for Vp and the source location.
 
@@ -38,7 +38,7 @@ Two examples have been provided with the distribution: observed and synthetic; i
 
 ## RUNNING THE CODE
 
-The following procedure provides a general outline of how to run the new software, once all input files are in place: 
+Some bash scripts (guided by <u>*run_PS_tomography.sh*</u>) are provided to automatically perform the joint inversion of P, S, and Vp/Vs models. These merge the following described procedure that provides a general outline of how to run the new software, once all input files are in place: 
 
 1) Under *invert_p/mkmodel* and *invert_s/mkmodel*, make sure that <u>*obsdatai*</u> has been run and <u>*otimes.dat*</u> and <u>*src.dat*</u> have been created. Copy these files into *invert_p* and *invert_s* directories, ensuring that <u>*otimes.dat*</u> is renamed <u>*otimesref.dat*</u>. Also, <u>*receivers.in*</u> needs to be copied across too and renamed <u>*receiversref.in*</u> (these are actually the source locations that will be adjusted during the inversion process). As with FMTOMO, <u>*sources.in*</u> needs to be copied across, as well as the velocity/interface grid files and propagation grid information.
 
@@ -52,7 +52,7 @@ The following procedure provides a general outline of how to run the new softwar
    
    **Note** that steps 2 and 3 are alternative in order to perform independent relocation based on P and S models, respectively, or to consider the same source locations for both.
 
-## NOTES ABOUT VISUALISING THE RESULTS
+## NOTES ABOUT VISUALISING THE RESULTS (TRADITIONAL)
 
 FMTOMO uses <u>*gmtslice*</u> to extract vertical and horizontal slices through the model for visualisation by GMT. With the Extras package, this is done in exactly the same way, but an option for plotting the % perturbation now exists. Hence, the code has been renamed <u>*gmtslicei*</u> to avoid confusion. To plot percentage perturbation, edit line 59 of <u>*gmtslicei.in*</u>. Then, rather than using the scripts <u>*plotd*</u>, <u>*plotew*</u> and <u>*plotns*</u>, you can use <u>*plotd*</u>, <u>*plotewp*</u> and <u>*plotnsp*</u>. Note that the code can also be set to produce estimates of location uncertainty. This can be done in <u>*gridlocj.in*</u>, and a file <u>*serror.da*</u>t is produced. Note that the plotting scripts don't currently include an option for plotting uncertainty, but this could be added quite easily. For example, to plot the EW error, you could include in the GMT script something like the following (after copying <u>*serror.dat*</u> to the current directory):
 
@@ -78,9 +78,17 @@ awk '{print $2,$1,$4}' temp.dat >! serrord.dat
 psxy serrord.dat $bounds1 $proj -Sc0.33 -Ccolor.cpt -W1 -O -K -P >> $psfile
 ```
 
+## NOTES ABOUT VISUALISING THE RESULTS (All In One)
+
+A folder *visualization* has been added containing: a Bash script, a Python script, and an "empty" *<u>gmtslicei.in</u>* file. The Python script *<u>3D_visualization.py</u>* prepares the input for the Bash script *<u>plot_sections.sh</u>* which, in turn, navigates the P and S folder for producing horizontal and vertical images of the two models. Specifically, it produces SN, EW, and Horizontal images corresponding with the velocity grid nodes (e.g., if the velocity grid is 12 points in latitude, the script will produce 12 EW vertical cross sections). Moreover, it also creates vertical sections in the models following the azimuth and the spacing set in the first lines of the Python code. 
+
+The user can find the results in the *gmtplot* folders in the *invert_p/* and *invert_s/* directories. Both absolute and relative velocity images are produced, so check the presence of *<u>velabsolute.cpt</u>* and *<u>velrelative.cpt</u>*.
+
+The Python script *<u>3D_visualization.py</u>* also produces a folder *output_files* containing the velocity models (P and S), the sources (original and relocated), and the receiver data in *<u>.csv</u>* format.
+
 ## SETTING UP A SYNTHETIC TEST
 
-In order to set up a synthetic test, do the following (here it is assumed that you have a real data example, and now want to run a resolution test):
+Some bash scripts (guided by <u><em>run_PS_synthetic.sh</em></u>) are provided to automatically perform the joint inversion of P, S, and Vp/Vs synthetic models. These merge the following described procedure (here it is assumed that you have a real data example, and now want to run a resolution test):
 
 1. In *invert_p/mkmodel*, edit <u>*grid3dgi.in*</u> so that the synthetic structure is created (be it checkerboard, spikes, or random structure).
 
