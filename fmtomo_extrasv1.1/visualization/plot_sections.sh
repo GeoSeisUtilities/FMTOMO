@@ -458,9 +458,9 @@ mv gmtslicei.in.or gmtslicei.in
 # Plot S model
 echo "Changing to S model"
 cd ../../invert_s/gmtplot/
-mkdir -p S_model
-mkdir -p S_model/absolute
-mkdir -p S_model/relative
+mkdir -p S_images
+mkdir -p S_images/absolute
+mkdir -p S_images/relative
 mv gmtslicei.in gmtslicei.in.or
 # absolute velocity
 velocity=velabsolute.cpt
