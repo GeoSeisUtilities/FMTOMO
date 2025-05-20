@@ -1,16 +1,8 @@
-#!/usr/bin/ksh
-#
-# Note, if ksh is not available, you can use 
-# another shell like zsh
-#
+#!/usr/bin/bash
 ##################################################
 ##################################################
 # This script will compile all executable programs
-# that are required by the FMM based tomographic
-# inversion routine. Additional programs for
-# plotting, generating synthetic data etc. are
-# also compiled. See accompanying documentation
-# for further details
+# that are required by GUI LET FMTOMO
 ##################################################
 ##################################################
 #
@@ -21,25 +13,23 @@
 ##################################################
 F90=gfortran
 ##################################################
-# NOTE: Compilation of the code "fm3d", which
-# solves the forward problem of data prediction, is
-# also carried out by this script. However, you
-# must ensure that the Makefile in the subdirectory
-# "fmcode" points to an appropriate Fotran 90
-# compiler. In addition, "fm3d" makes use of external
-# traveltime tables to compute teleseismic
-# traveltimes to the edge of the model region.
-# These tables are computed by a separate program
-# in the subdirectory "fmcode/aktimes". Edit the
-# Makefile in this directory so that it points to
-# an appropriate Fortran compiler.
-##################################################
 #
 # Enter the directory called "source" and compile
 # all programs.
 #
 ##################################################
 cd source
+$F90 -o frvpvs frvpvs.f90
+$F90 -o gridloc gridloc.f90
+$F90 -o gridlocj gridlocj.f90
+$F90 -o jointimes jointimes.f90
+$F90 -o mkvpvs mkvpvs.f90
+$F90 -o obsdatai obsdatai.f90
+$F90 -o vpvsinv vpvsinv.f90
+$F90 -o vpvsresids vpvsresids.f90
+$F90 -o grid3dgi grid3dgi.f90
+$F90 -o gmtslicei gmtslicei.f90
+$F90 -o synthdatai synthdatai.f90
 $F90 -o arraygen arraygen.f90
 $F90 -o frechgen frechgen.f90
 $F90 -o gmtslice gmtslice.f90
@@ -53,9 +43,14 @@ $F90 -o scorrect scorrect.f90
 $F90 -o mprop mprop.f90
 ##################################################
 #
-# Move all executables to  directory ../bin 
+# Move all executables to  directory ../bin
 #
 ##################################################
+mv frvpvs gridloc gridlocj ../bin
+mv jointimes mkvpvs obsdatai ../bin
+mv vpvsinv vpvsresids grid3dgi ../bin
+mv gmtslicei synthdatai ../bin
+cp cp_script tomo3di tomo3dj tomo3dps ../bin
 mv arraygen frechgen gmtslice ../bin
 mv grid3dg invert3d moddata ../bin
 mv obsdata residuals synthdata ../bin
@@ -92,6 +87,6 @@ setbrn
 ##################################################
 cp ak135.tbl ak135.hed ../../source/inputfiles
 ##################################################
-cd ../..
+cd ..
 echo " "
 echo "Compilation complete"
