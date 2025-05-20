@@ -6,7 +6,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ../interfaces.in            c: Inversion model interface vertices
 ../interfacesref.in         c: Reference model interface vertices
 6371.0                      c: Earth radius (km)
-PHASE                           c: Generate P(0) or S(1) velocities
+0                           c: Generate P(0) or S(1) velocities
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Set parameters for plotting ray paths if required
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

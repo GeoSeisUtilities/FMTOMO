@@ -28,7 +28,6 @@ mkdir -p P_images
 mkdir -p P_images/absolute
 mkdir -p P_images/relative
 mv gmtslicei.in gmtslicei.in.or
-sed -i 's/PHASE/0/g' gmtsliceiP.in
 # absolute velocity
 velocity=velabsolute.cpt
 cp gmtsliceiP.in gmtsliceiZ.in
@@ -463,7 +462,6 @@ mkdir -p S_model
 mkdir -p S_model/absolute
 mkdir -p S_model/relative
 mv gmtslicei.in gmtslicei.in.or
-sed -i 's/PHASE/1/g' gmtsliceiS.in
 # absolute velocity
 velocity=velabsolute.cpt
 cp gmtsliceiS.in gmtsliceiZ.in

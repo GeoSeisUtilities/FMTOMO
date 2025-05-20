@@ -258,10 +258,6 @@ if not os.path.exists(path):
     os.makedirs(path)
 with open(path+'data_path', 'w') as o:
     o.write(folder_path)
-# LONs = np.sort(np.unique(Pvelocity["Lon(°)"].values))[1]
-# LONe = np.sort(np.unique(Pvelocity["Lon(°)"].values))[-2]
-# LATs = np.sort(np.unique(Pvelocity["Lat(°)"].values))[1]
-# LATe = np.sort(np.unique(Pvelocity["Lat(°)"].values))[-2]
 sez_length = haversine(LATs, LONs, LATe, LONe)
 lat_mean = LATs + (LATe - LATs)/2
 lon_mean = LONs + (LONe - LONs)/2
@@ -377,7 +373,7 @@ fig.show()
 with open(path+'Section_coordinates', 'w') as o:
     for i in coor_dict.keys():
         line = coor_dict[i]
-        o.write(f'{line["y_start"]} {line["x_start"]} {line["y_end"]} {line["x_end"]} {line["sez_length"]} {key} \n')
+        o.write(f'{line["y_start"]} {line["x_start"]} {line["y_end"]} {line["x_end"]} {line["sez_length"]} {i} \n')
 xp = np.unique(Pvelocity["Lon(°)"].values)
 xp.tofile(path+'LONGY', sep='\n')
 yp = np.unique(Pvelocity["Lat(°)"].values)
