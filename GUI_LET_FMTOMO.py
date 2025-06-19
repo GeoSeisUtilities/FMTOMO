@@ -46,62 +46,70 @@ def obspy2fmtomo(catalogue, stations, output_dir, phases):
     output_dir.mkdir(exist_ok=True, parents=True)
     pick_cols = ["olat", "olon", "odep", "ttime", "ttime_err"]
     pick_dict = {}
-    for i, station in stations.iterrows():
-        stat = station["Name"]
-        print(f"Creating pick file for {stat}...")
-        # Create DataFrames to store all picks for each phase
-        dfs = {}
-        for phase in phases:
-            dfs[phase] = pd.DataFrame(columns=pick_cols)
-        for event in catalogue:
-            if event.preferred_origin() == None:
-                origin = event.origins[0]
-            else:
-                origin = event.preferred_origin()
-            olat, olon, odep = origin.latitude, origin.longitude, origin.depth
-            otime = origin.time
-            for pick in event.picks:
-                if pick.waveform_id.station_code == stat:
-                    line = pd.DataFrame([float(olat), float(olon), float(odep),
-                                         float(pick.time - otime),
-                                         float(pick.time_errors.uncertainty)],
-                                        index=pick_cols).T
-                    phase = pick.phase_hint
-                    if phase in phases:
-                        dfs[phase] = pd.concat([dfs[phase], line])
-        for phase in phases:
-            out = output_dir / "picks"
-            out.mkdir(parents=True, exist_ok=True)
-            outfile = out / f"{stat}.{phase}pick"
-            out_df = dfs[phase]
-            if out_df.empty:
-                continue
-            out_df = out_df.apply(pd.to_numeric)
-            with outfile.open("w") as f:
-                print(f"{len(out_df)}", file=f)
-                for i, pick in out_df.iterrows():
-                    print((f"{pick.olat:.4f} {pick.olon:.4f} "
-                           f"{pick.odep/1000:.5f} {pick.ttime:.4f} "
-                           f"{pick.ttime_err:.2f}"), file=f)
-        anypicks = [dfs[phase].empty for pick in phases]
-        if not np.all(anypicks):
-            pick_dict[stat] = dfs
-    print("Generation of pick files complete.")
-    with (output_dir / "sourceslocal.in").open("w") as f:
-        print(f"{len(pick_dict)}", file=f)
-        for key, value in pick_dict.items():
-            station = stations[stations["Name"] == key].iloc[0]
+    with open(log_path+'obspy2fmtomo.log', 'w') as log:
+        for i, station in stations.iterrows():
             stat = station["Name"]
-            print((f"{station.Latitude:.4f} "
-                   f"{station.Longitude:.4f} "
-                   f"{station.Elevation:.4f}"), file=f)
-            print(f"{len(phases)}", file=f)
+            log.write(f"Creating pick file for {stat}...\n")
+            # Create DataFrames to store all picks for each phase
+            dfs = {}
             for phase in phases:
-                print(f"1 1 {stat}.{phase}pick", file=f)
-    stat_df = pd.DataFrame(columns=["Name", "Latitude", "Longitude", "Elevation"])
-    for key in pick_dict.keys():
-        stat_df = pd.concat([stat_df, stations[stations["Name"] == key]])
-    stat_df.to_csv(str(output_dir / "stations_file.txt"), index=False)
+                dfs[phase] = pd.DataFrame(columns=pick_cols)
+            for event in catalogue:
+                if event.preferred_origin() == None:
+                    origin = event.origins[0]
+                else:
+                    origin = event.preferred_origin()
+                olat, olon, odep = origin.latitude, origin.longitude, origin.depth
+                otime = origin.time
+                for pick in event.picks:
+                    if pick.waveform_id.station_code.upper() == stat:
+                        line = pd.DataFrame([float(olat), float(olon), float(odep),
+                                             float(pick.time - otime),
+                                             float(pick.time_errors.uncertainty)],
+                                            index=pick_cols).T
+                        phase = pick.phase_hint
+                        if phase in phases:
+                            dfs[phase] = pd.concat([dfs[phase], line])
+            for phase in phases:
+                out = output_dir / "picks"
+                out.mkdir(parents=True, exist_ok=True)
+                outfile = out / f"{stat}.{phase}pick"
+                out_df = dfs[phase]
+                if out_df.empty:
+                    continue
+                out_df = out_df.apply(pd.to_numeric)
+                with outfile.open("w") as f:
+                    print(f"{len(out_df)}", file=f)
+                    for i, pick in out_df.iterrows():
+                        if f"{pick.ttime_err:.2f}" == 'nan':
+                            pick_ttime_err = '0.00'
+                        else:
+                            pick_ttime_err = f"{pick.ttime_err:.2f}"
+                        print((f"{pick.olat:.4f} {pick.olon:.4f} "
+                               f"{pick.odep/1000:.5f} {pick.ttime:.4f} "
+                               f"{pick_ttime_err}"), file=f)
+            anypicks = [dfs[phase].empty for pick in phases]
+            if not np.all(anypicks):
+                pick_dict[stat] = dfs
+        log.write("Generation of pick files complete.\n")
+        with (output_dir / "sourceslocal.in").open("w") as f:
+            print(f"{len(pick_dict)}", file=f)
+            n = 0
+            for key, value in pick_dict.items():
+                n += 1
+                station = stations[stations["Name"] == key].iloc[0]
+                stat = station["Name"]
+                print((f"{station.Latitude:.4f}  "
+                       f"{station.Longitude:.4f}    "
+                       f"{station.Elevation:.4f}   "
+                       f"{n}"), file=f)
+                print(f"{len(phases)}", file=f)
+                for phase in phases:
+                    print(f"1  1	 {stat}.{phase}pick", file=f)
+        stat_df = pd.DataFrame(columns=["Name", "Latitude", "Longitude", "Elevation"])
+        for key in pick_dict.keys():
+            stat_df = pd.concat([stat_df, stations[stations["Name"] == key]])
+        stat_df.to_csv(str(output_dir / "stations_file.txt"), index=False)
 
 class AlertWidget(ctk.CTkToplevel):
     def __init__(self, *args, **kwargs):
@@ -205,95 +213,96 @@ def convert_coord(coord_format, dataframe, column_name):
 
 def parse_hypoellipse(file_path):
     picking_weight = {0:0.015, 1:0.03, 2:0.05, 3:0.08, 4:0.1}
-    catalog = Catalog()
-    with open(file_path, 'r') as f:
-        lines = f.readlines()
-    for i, line in enumerate(lines):
-        if line.strip().startswith("date") and "origin" in line:
-            origin_line = lines[i + 1].strip()
-            coord_line = lines[i + 2].strip()
-            error_lines = lines[i + 4].strip()
-            try:
-                j = 8
-                phases = []
-                subsetline = lines[i + j].strip()
-                phases.append(subsetline)
-                while '-- magnitude data --' not in subsetline:
-                    j += 1
+    with open(log_path+'parse_hypoellipse.log', 'w') as log:
+        catalog = Catalog()
+        with open(file_path, 'r') as f:
+            lines = f.readlines()
+        for i, line in enumerate(lines):
+            if line.strip().startswith("date") and "origin" in line:
+                origin_line = lines[i + 1].strip()
+                coord_line = lines[i + 2].strip()
+                error_lines = lines[i + 4].strip()
+                try:
+                    j = 8
+                    phases = []
                     subsetline = lines[i + j].strip()
                     phases.append(subsetline)
-                phases = phases[:-2]
-            except:
-                print("No phases information")
-            try:
-                date_str = origin_line[:8]
-                time_str = origin_line[9:19].replace(" ", "0")
-                time = UTCDateTime(f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}T{time_str[:2]}:{time_str[2:4]}:{time_str[5:]}")
-                lat = float(coord_line.split(' ')[0])
-                lon = float(coord_line.split(' ')[-1])
-                depth = float(origin_line[38:45].strip())
-                try:
-                    mag = float(origin_line[45:53].strip())
-                    mag_ind = 0
-                    magnitude = Magnitude(mag=mag)
+                    while '-- magnitude data --' not in subsetline:
+                        j += 1
+                        subsetline = lines[i + j].strip()
+                        phases.append(subsetline)
+                    phases = phases[:-2]
                 except:
-                    mag_ind = 1
-                if float(error_lines[:4].strip()) == 99.0:
-                    seh = np.nan
-                else:
-                    seh = float(error_lines[:4].strip())
-                sez = float(error_lines[4:9].strip())
-                origin = Origin(time=time, latitude=lat, longitude=lon, depth=depth * 1000,
-                        latitude_errors = seh, longitude_errors = seh, depth_errors = sez)
-            except:
-                print("Error in getting information from file")
-            try:
-                if mag_ind == 0:
-                    event = Event(origins=[origin], magnitudes=[magnitude],
-                                  resource_id=ResourceIdentifier(prefix="event"))
-                else:
-                    event = Event(origins=[origin],
-                                  resource_id=ResourceIdentifier(prefix="event"))
+                    log.write(f"No phases information for {origin_line}\n")
                 try:
-                    dist_ = 0
-                    azimuth_ = 0
-                    for ph in phases:
-                        station = ph[0:5].strip()
-                        component = f"EH{ph[5].upper()}"
-                        phase_hint = ph[12].strip().upper()
-                        try:
-                            time_weight = picking_weight[int(ph[14])]
-                        except:
-                            time_weight = picking_weight[4]
-                        pick_time = float(ph[17:29].strip())
-                        residual = float(ph[29:36].strip())
-                        try:
-                            std_error = float(ph[37:44].strip())
-                        except:
-                            std_error = np.nan
-                        try:
-                            dist = float(ph[44:51].strip())
-                            dist_ = dist
-                            azimuth = int(ph[51:56].strip())
-                            azimuth_ = azimuth
-                        except:
-                            dist = dist_
-                            azimuth = azimuth_
-                        pick_time = time + pick_time
-                        pick = Pick(time=pick_time, waveform_id={'station_code': station,
-                            'channel_code': component}, phase_hint=phase_hint,
-                            method_id="hypoellipse", time_errors=std_error)
-                        arrival = Arrival(pick_id=pick.resource_id, phase=phase_hint,
-                            azimuth=azimuth, distance=dist, time_residual=residual,
-                            time_weight=time_weight)
-                        event.picks.append(pick)
-                        origin.arrivals.append(arrival)
+                    date_str = origin_line[:8]
+                    time_str = origin_line[9:19].replace(" ", "0")
+                    time = UTCDateTime(f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}T{time_str[:2]}:{time_str[2:4]}:{time_str[5:]}")
+                    lat = float(coord_line.split(' ')[0])
+                    lon = float(coord_line.split(' ')[-1])
+                    depth = float(origin_line[38:45].strip())
+                    try:
+                        mag = float(origin_line[45:53].strip())
+                        mag_ind = 0
+                        magnitude = Magnitude(mag=mag)
+                    except:
+                        mag_ind = 1
+                    if float(error_lines[:4].strip()) == 99.0:
+                        seh = np.nan
+                    else:
+                        seh = float(error_lines[:4].strip())
+                    sez = float(error_lines[4:9].strip())
+                    origin = Origin(time=time, latitude=lat, longitude=lon, depth=depth * 1000,
+                            latitude_errors = seh, longitude_errors = seh, depth_errors = sez)
                 except:
-                    print("Error in getting phases information")
-                catalog.append(event)
-            except:
-                print("Error in adding event to catalog")
-    return catalog
+                    log.write("Error in getting information from file for eq. {origin_line}\n")
+                try:
+                    if mag_ind == 0:
+                        event = Event(origins=[origin], magnitudes=[magnitude],
+                                      resource_id=ResourceIdentifier(prefix="event"))
+                    else:
+                        event = Event(origins=[origin],
+                                      resource_id=ResourceIdentifier(prefix="event"))
+                    try:
+                        dist_ = 0
+                        azimuth_ = 0
+                        for ph in phases:
+                            station = ph[0:5].strip()
+                            component = f"EH{ph[5].upper()}"
+                            phase_hint = ph[12].strip().upper()
+                            try:
+                                time_weight = picking_weight[int(ph[14])]
+                            except:
+                                time_weight = picking_weight[4]
+                            pick_time = float(ph[17:29].strip())
+                            residual = float(ph[29:36].strip())
+                            try:
+                                std_error = float(ph[37:44].strip())
+                            except:
+                                std_error = np.nan
+                            try:
+                                dist = float(ph[44:51].strip())
+                                dist_ = dist
+                                azimuth = int(ph[51:56].strip())
+                                azimuth_ = azimuth
+                            except:
+                                dist = dist_
+                                azimuth = azimuth_
+                            pick_time = time + pick_time
+                            pick = Pick(time=pick_time, waveform_id={'station_code': station,
+                                'channel_code': component}, phase_hint=phase_hint,
+                                method_id="hypoellipse", time_errors=std_error)
+                            arrival = Arrival(pick_id=pick.resource_id, phase=phase_hint,
+                                azimuth=azimuth, distance=dist, time_residual=residual,
+                                time_weight=time_weight)
+                            event.picks.append(pick)
+                            origin.arrivals.append(arrival)
+                    except:
+                        log.write("Error in getting phases information for: {phases[0]}\n")
+                    catalog.append(event)
+                except:
+                    log.write("Error in adding event {origins} to catalog\n")
+        return catalog
 
 ## Defining GUI
 # general configuration
@@ -302,6 +311,10 @@ ctk.set_default_color_theme("green")
 width = 800
 height = 400
 offset = 10
+log_path = os.getcwd() + '/logs_GUI/'
+log_path = log_path.replace('\\','/')
+if not os.path.exists(log_path):
+    os.makedirs(log_path)
 
 # main window
 class GUI(ctk.CTk):
@@ -318,6 +331,7 @@ class GUI(ctk.CTk):
         self.entries = []
         self.buttons = []
         self.combobox = []
+        self.resize_staz_eqs_ = 0
         self.fmtomo_folder = ctk.CTkEntry(self, placeholder_text="FMTOMO folder", width=width/4)
         self.fmtomo_folder.place(x=offset, y=offset)
         self.entries.append(self.fmtomo_folder)
@@ -350,10 +364,10 @@ class GUI(ctk.CTk):
         Inv_prob_tab = self.tabview.tab("Inverse problem")
 
         # input selection tab
-        eqs_switch = ctk.CTkSwitch(master=Eqs_data_tab, switch_height=10,
+        self.eqs_switch = ctk.CTkSwitch(master=Eqs_data_tab, switch_height=10,
                             text="I need input generation",
                             command=lambda: self.switch_activation(eqs_widgets))
-        eqs_switch.place(x=offset, y=0)
+        self.eqs_switch.place(x=offset, y=0)
         self.cat_path = ctk.CTkEntry(Eqs_data_tab, placeholder_text="Earthquakes catalog",
                                 width=width/4)
         self.cat_path.place(x=width/2, y=6*offset)
@@ -954,17 +968,18 @@ class GUI(ctk.CTk):
 
     def generate_input(self):
         self.checked_eqs = 1
-        self.resize_staz_eqs()
+        if self.resize_staz_eqs_ != 1:
+            self.resize_staz_eqs()
         # acquire catalog info
         fmtomo_path = self.fmtomo_folder.get()
         ps = self.PS.get()
         if ps == 'P':
-            obspy2fmtomo(self.ev_cat, self.staz_df, f'{fmtomo_path}/invert_p/mkdir/', ["P"])
+            obspy2fmtomo(self.ev_cat, self.staz_df, f'{fmtomo_path}/invert_p/mkmodel/', ["P"])
         elif ps == 'S':
-            obspy2fmtomo(self.ev_cat, self.staz_df, f'{fmtomo_path}/invert_s/mkdir/', ["S"])
+            obspy2fmtomo(self.ev_cat, self.staz_df, f'{fmtomo_path}/invert_s/mkmodel/', ["S"])
         elif ps == 'P and S':
-            obspy2fmtomo(self.ev_cat, self.staz_df, f'{fmtomo_path}/invert_p/mkdir/', ["P"])
-            obspy2fmtomo(self.ev_cat, self.staz_df, f'{fmtomo_path}/invert_s/mkdir/', ["S"])
+            obspy2fmtomo(self.ev_cat, self.staz_df, f'{fmtomo_path}/invert_p/mkmodel/', ["P"])
+            obspy2fmtomo(self.ev_cat, self.staz_df, f'{fmtomo_path}/invert_s/mkmodel/', ["S"])
 
     def estimate_spacing(self):
         from geopy.distance import geodesic
@@ -1044,6 +1059,7 @@ class GUI(ctk.CTk):
         self.switch_activation(widgets)
 
     def resize_staz_eqs(self):
+        self.resize_staz_eqs_ = 1
         lat1, lon1 = float(self.min_lat.get()), float(self.min_lon.get())
         lat2, lon2 = float(self.max_lat.get()), float(self.max_lon.get())
         dep1, dep2 = float(self.min_dep.get()), float(self.max_dep.get())
@@ -1064,10 +1080,10 @@ class GUI(ctk.CTk):
             for s in f_st:
                 s = s.split(delim)
                 staz_df.loc[len(staz_df)] = [s[cod],float(s[lon]),float(s[lat]),float(s[dep])]
-            self.staz_df = staz_df.copy()
             convert_depth(dep_f, staz_df, 'Elevation')
             convert_coord(lat_f, staz_df, 'Latitude')
             convert_coord(lon_f, staz_df, 'Longitude')
+            self.staz_df = staz_df.copy()
             # acquire catalog info
             cat = self.cat_path.get()
             form = self.cat_format.get()
@@ -1110,71 +1126,72 @@ class GUI(ctk.CTk):
 
     def get_velocity(self):
         import matplotlib.pyplot as plt
-        try:
-            max_depth = float(self.max_dep.get())
-            min_depth = float(self.min_dep.get())
-        except:
-            max_depth = 600
-            min_depth = 0
-        if self.radio_var2.get() == 1:
-            self.gradual_velocity = 1
+        with open(log_path+'get_velocity.log', 'w') as log:
             try:
-                self.min_VP = float(self.min_velP.get())
-                self.max_VP = float(self.max_velP.get())
-                self.min_VS = float(self.min_velS.get())
-                self.max_VS = float(self.max_velS.get())
-                self.dep_range = max_depth - min_depth
+                max_depth = float(self.max_dep.get())
+                min_depth = float(self.min_dep.get())
             except:
-                # data from IASP91
-                self.min_VP = 5.8
-                self.max_VP = 9.9984
-                self.min_VS = 3.36
-                self.max_VS = 5.4728
-                self.dep_range = max_depth - min_depth
-        elif self.radio_var2.get() == 0:
-            self.velocity_model = self.vel_file.get()
-            self.gradual_velocity = 0
-            delm_list = [";"," ", "|"]
-            try:
-                with open(self.velocity_model) as f_v:
-                    file_v = f_v.readlines()
-                while '\n' in file_v:
-                    file_v.remove('\n')
-                self.vel_mod = pd.DataFrame(columns=['Depth','Pvel','Svel'])
-                v_line = file_v[0]
-                for delm in delm_list:
-                    if len(v_line.split(delm)) > 1:
-                        break
-                for v_line in file_v:
-                    v_line = v_line.split(delm)
-                    while '' in v_line:
-                        v_line.remove('')
-                    while '\n' in v_line:
-                        v_line.remove('\n')
-                    if v_line != []:
-                        if v_line[-1][-1]=='\n':
-                            self.vel_mod.loc[len(self.vel_mod)] = [float(v_line[0]), float(v_line[1]),
-                                             float(v_line[-1][:-1])]
-                        else:
-                            self.vel_mod.loc[len(self.vel_mod)] = [float(v_line[0]), float(v_line[1]),
-                                             float(v_line[-1])]
-                mx_dp = self.vel_mod.loc[np.searchsorted(\
-                            np.array(self.vel_mod.Depth),float(self.max_dep.get()))]
-                mi_dp = self.vel_mod.loc[np.searchsorted(\
-                            np.array(self.vel_mod.Depth),float(self.min_dep.get()))]
-                self.min_VP = mi_dp.Pvel
-                self.max_VP = mx_dp.Pvel
-                self.min_VS = mi_dp.Svel
-                self.max_VS = mx_dp.Svel
-                self.dep_range = mx_dp.Depth-mi_dp.Depth
-            except:
-                print("Invalid velocity file, using IASP91")
+                max_depth = 600
+                min_depth = 0
+            if self.radio_var2.get() == 1:
                 self.gradual_velocity = 1
-                self.min_VP = 5.8
-                self.max_VP = 9.9984
-                self.min_VS = 3.36
-                self.max_VS = 5.4728
-                self.dep_range = max_depth - min_depth
+                try:
+                    self.min_VP = float(self.min_velP.get())
+                    self.max_VP = float(self.max_velP.get())
+                    self.min_VS = float(self.min_velS.get())
+                    self.max_VS = float(self.max_velS.get())
+                    self.dep_range = max_depth - min_depth
+                except:
+                    # data from IASP91
+                    self.min_VP = 5.8
+                    self.max_VP = 9.9984
+                    self.min_VS = 3.36
+                    self.max_VS = 5.4728
+                    self.dep_range = max_depth - min_depth
+            elif self.radio_var2.get() == 0:
+                self.velocity_model = self.vel_file.get()
+                self.gradual_velocity = 0
+                delm_list = [";"," ", "|"]
+                try:
+                    with open(self.velocity_model) as f_v:
+                        file_v = f_v.readlines()
+                    while '\n' in file_v:
+                        file_v.remove('\n')
+                    self.vel_mod = pd.DataFrame(columns=['Depth','Pvel','Svel'])
+                    v_line = file_v[0]
+                    for delm in delm_list:
+                        if len(v_line.split(delm)) > 1:
+                            break
+                    for v_line in file_v:
+                        v_line = v_line.split(delm)
+                        while '' in v_line:
+                            v_line.remove('')
+                        while '\n' in v_line:
+                            v_line.remove('\n')
+                        if v_line != []:
+                            if v_line[-1][-1]=='\n':
+                                self.vel_mod.loc[len(self.vel_mod)] = [float(v_line[0]), float(v_line[1]),
+                                                 float(v_line[-1][:-1])]
+                            else:
+                                self.vel_mod.loc[len(self.vel_mod)] = [float(v_line[0]), float(v_line[1]),
+                                                 float(v_line[-1])]
+                    mx_dp = self.vel_mod.loc[np.searchsorted(\
+                                np.array(self.vel_mod.Depth),float(self.max_dep.get()))]
+                    mi_dp = self.vel_mod.loc[np.searchsorted(\
+                                np.array(self.vel_mod.Depth),float(self.min_dep.get()))]
+                    self.min_VP = mi_dp.Pvel
+                    self.max_VP = mx_dp.Pvel
+                    self.min_VS = mi_dp.Svel
+                    self.max_VS = mx_dp.Svel
+                    self.dep_range = mx_dp.Depth-mi_dp.Depth
+                except:
+                    log.write("Invalid velocity file, using IASP91")
+                    self.gradual_velocity = 1
+                    self.min_VP = 5.8
+                    self.max_VP = 9.9984
+                    self.min_VS = 3.36
+                    self.max_VS = 5.4728
+                    self.dep_range = max_depth - min_depth
         plot_path = os.getcwd() + '/cat_plots/'
         plot_path = plot_path.replace('\\','/')
         if not os.path.exists(plot_path):
@@ -1191,7 +1208,6 @@ class GUI(ctk.CTk):
             plt.title('1D velocity profile')
             plt.legend()
             plt.grid()
-            plt.show()
             plt.savefig(plot_path+'Velocity_profile.png')
             plt.savefig(plot_path+'Velocity_profile.pdf')
             plt.savefig(plot_path+'Velocity_profile.svg')
@@ -1224,74 +1240,76 @@ class GUI(ctk.CTk):
         import matplotlib.gridspec as gridspec
         from mpl_toolkits.basemap import Basemap
         # get geometry
-        self.resize_staz_eqs()
-        self.get_velocity()
-        y_min, x_min = float(self.min_lat.get()), float(self.min_lon.get())
-        y_max, x_max = float(self.max_lat.get()), float(self.max_lon.get())
-        z_min, z_max = float(self.min_dep.get()), float(self.max_dep.get())
-        if abs(x_max - x_min) > 50 or abs(y_max - y_min) > 50 or abs(z_max - z_min) > 100:
-            step = 10
-        elif abs(x_max - x_min) < 5 or abs(y_max - y_min) < 5 or abs(z_max - z_min) < 10:
-            step = 0.5
-        elif abs(x_max - x_min) < 2 or abs(y_max - y_min) < 2 or abs(z_max - z_min) < 5:
-            step = 0.1
-        else:
-            step = 1
-        # build grid
-        x, y, z = np.arange(start=x_min-step, stop=x_max+step, step=step, dtype=float),\
-                    np.arange(start=y_min-step, stop=y_max+step, step=step, dtype=float),\
-                    np.arange(start=z_min-step, stop=z_max+step, step=step, dtype=float)
-        coeff =  (self.max_VP-self.min_VP)/self.dep_range
-        V = np.empty((x.size, y.size, z.size), dtype=float)
-        for n in range(z.size):
-            V[:, :, n] = self.min_VP + coeff*z[n]
-        hitmap = np.zeros(V.shape, dtype=int)
-        grid = rg.Grid3d(x, y, z, cell_slowness=False)
-        slowness = 1./V
-        stz_sel = pd.DataFrame(columns=list(self.staz_df_r.columns))
-        ev_sel = pd.DataFrame(columns=["Longitude", "Latitude", "Depth"])
-        # calculating rays
-        for event in self.ev_cat:
-            if event.preferred_origin() == None:
-                origin = event.origins[0]
+        with open(log_path+'perform_raytracing.log', 'w') as log:
+            if self.resize_staz_eqs_ != 1:
+                self.resize_staz_eqs()
+            self.get_velocity()
+            y_min, x_min = float(self.min_lat.get()), float(self.min_lon.get())
+            y_max, x_max = float(self.max_lat.get()), float(self.max_lon.get())
+            z_min, z_max = float(self.min_dep.get()), float(self.max_dep.get())
+            if abs(x_max - x_min) > 50 or abs(y_max - y_min) > 50 or abs(z_max - z_min) > 100:
+                step = 10
+            elif abs(x_max - x_min) < 5 or abs(y_max - y_min) < 5 or abs(z_max - z_min) < 10:
+                step = 0.5
+            elif abs(x_max - x_min) < 2 or abs(y_max - y_min) < 2 or abs(z_max - z_min) < 5:
+                step = 0.1
             else:
-                origin = event.preferred_origin()
-            or_lon = origin.longitude
-            or_lat = origin.latitude
-            or_dep = origin.depth/1000
-            ev_sel.loc[len(ev_sel)] = [or_lon, or_lat, or_dep]
-            src = np.array([[or_lon, or_lat, or_dep]])
-            rcv = []
-            for pick in event.picks:
-                if pick.phase_hint == 'P':
-                    staz = pick.waveform_id.station_code
-                    station = self.staz_df_r[self.staz_df_r["Name"] == staz.upper()]
-                    if station.empty:
-                        station2 = self.staz_df[self.staz_df["Name"] == staz.upper()]
-                        if station2.empty:
-                            print(f"{staz.upper()} not found in the list")
-                        continue
-                    slon, slat, sdep = float(station['Longitude'].iloc[0]),\
-                    float(station['Latitude'].iloc[0]),\
-                    float(station['Elevation'].iloc[0])
-                    stz_sel = pd.concat([stz_sel, station])
-                    rcv.append([slon, slat, sdep])
-            if rcv == []:
-                print("Not station found for the current source")
-                continue
-            rcv = np.array(rcv)
-            try:
-                _, rays = grid.raytrace(src, rcv, slowness, return_rays=True)
-            except:
-                print(f"Error in raytracing for\nssrc: {src}\nrcv: {rcv}")
-            mx_ray_dp = 0
-            for ray in rays:
-                for cell in ray:
-                    hitmap[np.argmin(np.abs(x - cell[0])),
-                           np.argmin(np.abs(y - cell[1])),
-                           np.argmin(np.abs(z - cell[2]))] += 1
-                    if float(cell[2]) > mx_ray_dp:
-                        mx_ray_dp = float(cell[2])
+                step = 1
+            # build grid
+            x, y, z = np.arange(start=x_min-step, stop=x_max+step, step=step, dtype=float),\
+                        np.arange(start=y_min-step, stop=y_max+step, step=step, dtype=float),\
+                        np.arange(start=z_min-step, stop=z_max+step, step=step, dtype=float)
+            coeff =  (self.max_VP-self.min_VP)/self.dep_range
+            V = np.empty((x.size, y.size, z.size), dtype=float)
+            for n in range(z.size):
+                V[:, :, n] = self.min_VP + coeff*z[n]
+            hitmap = np.zeros(V.shape, dtype=int)
+            grid = rg.Grid3d(x, y, z, cell_slowness=False)
+            slowness = 1./V
+            stz_sel = pd.DataFrame(columns=list(self.staz_df_r.columns))
+            ev_sel = pd.DataFrame(columns=["Longitude", "Latitude", "Depth"])
+            # calculating rays
+            for event in self.ev_cat:
+                if event.preferred_origin() == None:
+                    origin = event.origins[0]
+                else:
+                    origin = event.preferred_origin()
+                or_lon = origin.longitude
+                or_lat = origin.latitude
+                or_dep = origin.depth/1000
+                ev_sel.loc[len(ev_sel)] = [or_lon, or_lat, or_dep]
+                src = np.array([[or_lon, or_lat, or_dep]])
+                rcv = []
+                for pick in event.picks:
+                    if pick.phase_hint == 'P':
+                        staz = pick.waveform_id.station_code
+                        station = self.staz_df_r[self.staz_df_r["Name"] == staz.upper()]
+                        if station.empty:
+                            station2 = self.staz_df[self.staz_df["Name"] == staz.upper()]
+                            if station2.empty:
+                                log.write(f"{staz.upper()} not found in the list\n")
+                            continue
+                        slon, slat, sdep = float(station['Longitude'].iloc[0]),\
+                        float(station['Latitude'].iloc[0]),\
+                        float(station['Elevation'].iloc[0])
+                        stz_sel = pd.concat([stz_sel, station])
+                        rcv.append([slon, slat, sdep])
+                if rcv == []:
+                    log.write(f"Not station found for the current source: {src}\n")
+                    continue
+                rcv = np.array(rcv)
+                try:
+                    _, rays = grid.raytrace(src, rcv, slowness, return_rays=True)
+                except:
+                    log.write(f"Error in raytracing for\nssrc: {src}\nrcv: {rcv}\n")
+                mx_ray_dp = 0
+                for ray in rays:
+                    for cell in ray:
+                        hitmap[np.argmin(np.abs(x - cell[0])),
+                               np.argmin(np.abs(y - cell[1])),
+                               np.argmin(np.abs(z - cell[2]))] += 1
+                        if float(cell[2]) > mx_ray_dp:
+                            mx_ray_dp = float(cell[2])
         # plot hitmaps
         plot_path = os.getcwd() + '/cat_plots/'
         plot_path = plot_path.replace('\\','/')
@@ -1351,6 +1369,7 @@ class GUI(ctk.CTk):
         plt.savefig(plot_path+'Hitmaps.pdf')
         plt.savefig(plot_path+'Hitmaps.svg')
         # plot earthquakes and stations
+        fig = plt.figure()
         m = Basemap(llcrnrlon=x_min - step,
                 llcrnrlat=y_min - step,
                 urcrnrlon=x_max + step,
@@ -1383,11 +1402,37 @@ class GUI(ctk.CTk):
         plt.savefig(plot_path+'GIS_map.svg')
 
     def compile_input_files(self):
-        import shutil
         self.fmtomo_path = self.fmtomo_folder.get()
+        self.get_velocity()
         if self.eqs_switch.get() == 1:
             if self.checked_eqs != 1:
                 self.generate_input()
+                self.checked_eqs = 1
+        vel_name = self.vel_file.get().split('/')[-1]
+        if self.pert_value.get() == '':
+            pert_value_ = 0
+        else:
+            pert_value_ = self.pert_value.get()
+        if self.pert_value2.get() == '':
+            pert_value2_ = 0
+        else:
+            pert_value2_ = self.pert_value2.get()
+        if self.check_size.get() == '':
+            check_size_ = 0
+        else:
+            check_size_ = self.check_size.get()
+        if self.spike_dep.get() == '':
+            spike_dep_ = 0
+        else:
+            spike_dep_ = self.spike_dep.get()
+        if self.spike_lat.get() == '':
+            spike_lat_ = 0
+        else:
+            spike_lat_ = self.spike_lat.get()
+        if self.spike_lon.get() == '':
+            spike_lon_ = 0
+        else:
+            spike_lon_ = self.spike_lon.get()
         grid3dgiP = f'''ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Specify number of layers (= number of interfaces -1)
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1404,7 +1449,7 @@ c velocity grids have the same spatial dimension, but can
 c have different node densities. Interface grids have the
 c same node distribution.
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-{self.min_dep.get()}       {self.max_dep.get()}       c: Radial range (top-bottom) of grid (km)
+{-float(self.min_dep.get())}       {-float(self.max_dep.get())}       c: Radial range (top-bottom) of grid (km)
 {self.min_lat.get()}   {self.max_lat.get()}         c: Latitudinal range (N-S) of grid (degrees)
 {self.min_lon.get()}   {self.max_lon.get()}         c: Longitudinal range (E-W) of grid (degrees)
 6371.0                c: Earth radius
@@ -1428,10 +1473,10 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 {self.n2_points_lonP.get()}        {self.n2_points_lonS.get()}          c: Number of grid points in phi (E-W)
 {self.radio_var2.get()}                     c: Use model (0) or constant gradient (1)
 P                     c: Use P or S velocity model
-{self.vel_file.get()}             c: Velocity model (option 0)
+{vel_name}             c: Velocity model (option 0)
 1                     c: Dimension of velocity model (1=1-D,3=3-D)
-{self.min_velP.get()}       {self.min_velS.get()}         c: Velocity at origin (km/s) (option 1)
-{self.max_velP.get()}       {self.max_velS.get()}         c: Velocity at maximum depth (km/s) (option 1)
+{self.min_VP}       {self.min_VS}         c: Velocity at origin (km/s) (option 1)
+{self.max_VP}       {self.max_VS}         c: Velocity at maximum depth (km/s) (option 1)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Optionally apply random structure to layer 1
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1443,16 +1488,16 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Optionally apply checkerboard to layer 1
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 {self.check_switch.get()}                     c: Add checkerboard (0=no,1=yes)
-{self.pert_value2.get()}                   c: Maximum perturbation of vertices
-{self.check_size.get()}                     c: Checkerboard size (NxNxN)
+{pert_value2_}                   c: Maximum perturbation of vertices
+{check_size_}                     c: Checkerboard size (NxNxN)
 0                     c: Use spacing (0=no,1=yes)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Optionally, apply spikes to layer 1
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 {self.spike_switch.get()}                     c: Apply spikes (0=no,1=yes)
 1                     c: Number of spikes
-{self.pert_value.get()}                  c: Amplitude of spike 1                  
-{self.spike_dep.get()}  {self.spike_lat.get()}  {self.spike_lon.get()}   c: Coordinates of spike 1 (depth, lat, long)
+{pert_value_}                  c: Amplitude of spike 1
+{spike_dep_}  {spike_lat_}  {spike_lon_}   c: Coordinates of spike 1 (depth, lat, long)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Now, set up the interface grids
@@ -1465,9 +1510,9 @@ c Set up interface grid for interface 1
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 0                     c: Obtain grid from external file (0=no,1=yes)
 interface1.z          c: External interface grid file (option 1)
-{float(self.min_dep.get())-1}                   c: Height of NW grid point (option 0)
-{float(self.min_dep.get())-1}                   c: Height of NE grid point (option 0)
-{float(self.min_dep.get())-1}                   c: Height of SW grid point (option 0)
+{-(float(self.min_dep.get()))-1}                   c: Height of NW grid point (option 0)
+{-(float(self.min_dep.get()))-1}                   c: Height of NE grid point (option 0)
+{-(float(self.min_dep.get()))-1}                   c: Height of SW grid point (option 0)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Optionally apply random structure to interface 1
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1496,9 +1541,9 @@ c Set up interface grid for interface 2
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 0                     c: Obtain grid from external file (0=no,1=yes)
 interface2.z          c: External interface grid file (option 1)
-{float(self.max_dep.get())+1}                 c: Height of NW grid point (option 0)
-{float(self.max_dep.get())+1}                 c: Height of NE grid point (option 0)
-{float(self.max_dep.get())+1}                 c: Height of SW grid point (option 0)
+{-(float(self.max_dep.get()))+1}                 c: Height of NW grid point (option 0)
+{-(float(self.max_dep.get()))+1}                 c: Height of NE grid point (option 0)
+{-(float(self.max_dep.get()))+1}                 c: Height of SW grid point (option 0)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Optionally apply random structure to interface 2
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1540,7 +1585,7 @@ c velocity grids have the same spatial dimension, but can
 c have different node densities. Interface grids have the
 c same node distribution.
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-{self.min_dep.get()}       {self.max_dep.get()}       c: Radial range (top-bottom) of grid (km)
+{-float(self.min_dep.get())}       {-float(self.max_dep.get())}       c: Radial range (top-bottom) of grid (km)
 {self.min_lat.get()}   {self.max_lat.get()}         c: Latitudinal range (N-S) of grid (degrees)
 {self.min_lon.get()}   {self.max_lon.get()}         c: Longitudinal range (E-W) of grid (degrees)
 6371.0                c: Earth radius
@@ -1564,10 +1609,10 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 {self.n2_points_lonP.get()}        {self.n2_points_lonS.get()}          c: Number of grid points in phi (E-W)
 {self.radio_var2.get()}                     c: Use model (0) or constant gradient (1)
 S                     c: Use P or S velocity model
-{self.vel_file.get()}             c: Velocity model (option 0)
+{vel_name}             c: Velocity model (option 0)
 1                     c: Dimension of velocity model (1=1-D,3=3-D)
-{self.min_velP.get()}       {self.min_velS.get()}         c: Velocity at origin (km/s) (option 1)
-{self.max_velP.get()}       {self.max_velS.get()}         c: Velocity at maximum depth (km/s) (option 1)
+{self.min_VP}       {self.min_VS}         c: Velocity at origin (km/s) (option 1)
+{self.max_VP}       {self.max_VS}         c: Velocity at maximum depth (km/s) (option 1)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Optionally apply random structure to layer 1
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1579,16 +1624,16 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Optionally apply checkerboard to layer 1
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 {self.check_switch.get()}                     c: Add checkerboard (0=no,1=yes)
-{self.pert_value2.get()}                   c: Maximum perturbation of vertices
-{self.check_size.get()}                     c: Checkerboard size (NxNxN)
+{pert_value2_}                   c: Maximum perturbation of vertices
+{check_size_}                     c: Checkerboard size (NxNxN)
 0                     c: Use spacing (0=no,1=yes)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Optionally, apply spikes to layer 1
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 {self.spike_switch.get()}                     c: Apply spikes (0=no,1=yes)
 1                     c: Number of spikes
-{self.pert_value.get()}                  c: Amplitude of spike 1                  
-{self.spike_dep.get()}  {self.spike_lat.get()}  {self.spike_lon.get()}   c: Coordinates of spike 1 (depth, lat, long)
+{pert_value_}                  c: Amplitude of spike 1
+{spike_dep_}  {spike_lat_}  {spike_lon_}   c: Coordinates of spike 1 (depth, lat, long)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Now, set up the interface grids
@@ -1601,9 +1646,9 @@ c Set up interface grid for interface 1
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 0                     c: Obtain grid from external file (0=no,1=yes)
 interface1.z          c: External interface grid file (option 1)
-{float(self.min_dep.get())-1}                   c: Height of NW grid point (option 0)
-{float(self.min_dep.get())-1}                   c: Height of NE grid point (option 0)
-{float(self.min_dep.get())-1}                   c: Height of SW grid point (option 0)
+{-(float(self.min_dep.get()))-1}                   c: Height of NW grid point (option 0)
+{-(float(self.min_dep.get()))-1}                   c: Height of NE grid point (option 0)
+{-(float(self.min_dep.get()))-1}                   c: Height of SW grid point (option 0)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Optionally apply random structure to interface 1
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1632,9 +1677,9 @@ c Set up interface grid for interface 2
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 0                     c: Obtain grid from external file (0=no,1=yes)
 interface2.z          c: External interface grid file (option 1)
-{float(self.max_dep.get())+1}                 c: Height of NW grid point (option 0)
-{float(self.max_dep.get())+1}                 c: Height of NE grid point (option 0)
-{float(self.max_dep.get())+1}                 c: Height of SW grid point (option 0)
+{-(float(self.max_dep.get()))+1}                 c: Height of NW grid point (option 0)
+{-(float(self.max_dep.get()))+1}                 c: Height of NE grid point (option 0)
+{-(float(self.max_dep.get()))+1}                 c: Height of SW grid point (option 0)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Optionally apply random structure to interface 2
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1682,7 +1727,7 @@ propgrid.in                 c: File containing propagation grid parameters
 0.07                        c: Minimum distance between interfaces (km)
 1.5                         c: Minimum permitted velocity (km/s)
 0                           c: Remove mean from predicted teleseisms (0=no,1=yes)
-1     {self.dampP.get()}    {self.smoothP.get()}            c: Velocity inversion (0=no,1=yes),damp,smooth
+1     {self.dampP.get()}     {self.smoothP.get()}             c: Velocity inversion (0=no,1=yes),damp,smooth
 0     0.5    0.02           c: Interface inversion (0=no, 1=yes),damp,smooth
 0     15      15            c: Source inversion (0=no, 1=yes),damp1,damp2
 {self.n_subs.get()}                          c: Subspace dimension (max=50)
@@ -1713,7 +1758,7 @@ propgrid.in                 c: File containing propagation grid parameters
 0.07                        c: Minimum distance between interfaces (km)
 1.5                         c: Minimum permitted velocity (km/s)
 0                           c: Remove mean from predicted teleseisms (0=no,1=yes)
-1     {self.dampS.get()}    {self.smoothS.get()}            c: Velocity inversion (0=no,1=yes),damp,smooth
+1     {self.dampS.get()}     {self.smoothS.get()}             c: Velocity inversion (0=no,1=yes),damp,smooth
 0     0.5    0.02           c: Interface inversion (0=no, 1=yes),damp,smooth
 0     15      15            c: Source inversion (0=no, 1=yes),damp1,damp2
 {self.n_subs.get()}                          c: Subspace dimension (max=50)
@@ -1722,13 +1767,13 @@ propgrid.in                 c: File containing propagation grid parameters
 0.02                        c: Global smoothing factor (eta)
 6371.0                      c: Earth radius in km
 '''
-        with open(f"{self.fmtomo_path}/invert_p/mkdir/grid3dgi.in", 'w') as o:
+        with open(f"{self.fmtomo_path}/invert_p/mkmodel/grid3dgi.in", 'w') as o:
             o.write(grid3dgiP)
-        with open(f"{self.fmtomo_path}/invert_s/mkdir/grid3dgi.in", 'w') as o:
+        with open(f"{self.fmtomo_path}/invert_s/mkmodel/grid3dgi.in", 'w') as o:
             o.write(grid3dgiS)
         with open(f"{self.fmtomo_path}/invert_p/invert3d.in", 'w') as o:
             o.write(invert3dP)
-        with open(f"{self.fmtomo_path}/invert_s/mkdir/invert3d.in", 'w') as o:
+        with open(f"{self.fmtomo_path}/invert_s/mkmodel/invert3d.in", 'w') as o:
             o.write(invert3dS)
 
     def reset_GUI(self, entries, buttons, comboboxes):
@@ -1750,10 +1795,10 @@ propgrid.in                 c: File containing propagation grid parameters
             else:
                 button.configure(fg_color=color, hover_color=hv_color)
         for cbx in comboboxes:
-            if cbx.cget("state") == "disabled":
-                cbx.configure(state="normal")
+            if cbx[0].cget("state") == "disabled":
+                cbx[0].configure(state="normal")
                 cbx[0].set(cbx[1])
-                cbx.configure(state="disabled")
+                cbx[0].configure(state="disabled")
             else:
                 cbx[0].set(cbx[1])
 
