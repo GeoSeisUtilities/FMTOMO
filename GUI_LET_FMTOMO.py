@@ -1450,7 +1450,7 @@ c have different node densities. Interface grids have the
 c same node distribution.
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 {-float(self.min_dep.get())}       {-float(self.max_dep.get())}       c: Radial range (top-bottom) of grid (km)
-{self.min_lat.get()}   {self.max_lat.get()}         c: Latitudinal range (N-S) of grid (degrees)
+{self.max_lat.get()}   {self.min_lat.get()}         c: Latitudinal range (N-S) of grid (degrees)
 {self.min_lon.get()}   {self.max_lon.get()}         c: Longitudinal range (E-W) of grid (degrees)
 6371.0                c: Earth radius
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1586,7 +1586,7 @@ c have different node densities. Interface grids have the
 c same node distribution.
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 {-float(self.min_dep.get())}       {-float(self.max_dep.get())}       c: Radial range (top-bottom) of grid (km)
-{self.min_lat.get()}   {self.max_lat.get()}         c: Latitudinal range (N-S) of grid (degrees)
+{self.max_lat.get()}   {self.min_lat.get()}         c: Latitudinal range (N-S) of grid (degrees)
 {self.min_lon.get()}   {self.max_lon.get()}         c: Longitudinal range (E-W) of grid (degrees)
 6371.0                c: Earth radius
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
