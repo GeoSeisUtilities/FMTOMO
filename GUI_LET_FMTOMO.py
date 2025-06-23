@@ -974,12 +974,12 @@ class GUI(ctk.CTk):
         fmtomo_path = self.fmtomo_folder.get()
         ps = self.PS.get()
         if ps == 'P':
-            obspy2fmtomo(self.ev_cat, self.staz_df, f'{fmtomo_path}/invert_p/mkmodel/', ["P"])
+            obspy2fmtomo(self.ev_cat, self.staz_df_r, f'{fmtomo_path}/invert_p/mkmodel/', ["P"])
         elif ps == 'S':
-            obspy2fmtomo(self.ev_cat, self.staz_df, f'{fmtomo_path}/invert_s/mkmodel/', ["S"])
+            obspy2fmtomo(self.ev_cat, self.staz_df_r, f'{fmtomo_path}/invert_s/mkmodel/', ["S"])
         elif ps == 'P and S':
-            obspy2fmtomo(self.ev_cat, self.staz_df, f'{fmtomo_path}/invert_p/mkmodel/', ["P"])
-            obspy2fmtomo(self.ev_cat, self.staz_df, f'{fmtomo_path}/invert_s/mkmodel/', ["S"])
+            obspy2fmtomo(self.ev_cat, self.staz_df_r, f'{fmtomo_path}/invert_p/mkmodel/', ["P"])
+            obspy2fmtomo(self.ev_cat, self.staz_df_r, f'{fmtomo_path}/invert_s/mkmodel/', ["S"])
 
     def estimate_spacing(self):
         from geopy.distance import geodesic
@@ -1060,9 +1060,9 @@ class GUI(ctk.CTk):
 
     def resize_staz_eqs(self):
         self.resize_staz_eqs_ = 1
-        lat1, lon1 = float(self.min_lat.get()), float(self.min_lon.get())
-        lat2, lon2 = float(self.max_lat.get()), float(self.max_lon.get())
-        dep1, dep2 = float(self.min_dep.get()), float(self.max_dep.get())
+        lat1, lon1 = float(self.min_lat.get())+0.1, float(self.min_lon.get())+0.1
+        lat2, lon2 = float(self.max_lat.get())-0.1, float(self.max_lon.get())-0.1
+        dep1, dep2 = float(self.min_dep.get())+0.1, float(self.max_dep.get())-0.1
         if self.cat_path.cget("state") != "disabled":
             # acquire station info
             st = self.staz_path.get()
@@ -1104,11 +1104,11 @@ class GUI(ctk.CTk):
                 ev_cat = read_events(cat)
             # resize staz
             mask_lat = (staz_df['Latitude'] > lat1) & (staz_df['Latitude'] < lat2)
-            staz_df = staz_df[mask_lat]
-            mask_lon = (staz_df['Longitude'] > lon1) & (staz_df['Longitude'] < lon2)
-            staz_df = staz_df[mask_lon]
-            mask_dep = (staz_df['Elevation'] > dep1) & (staz_df['Elevation'] < dep2)
-            self.staz_df_r = staz_df[mask_dep]
+            staz_df_ = staz_df[mask_lat]
+            mask_lon = (staz_df_['Longitude'] > lon1) & (staz_df_['Longitude'] < lon2)
+            staz_df__ = staz_df_[mask_lon]
+            mask_dep = (staz_df__['Elevation'] > dep1) & (staz_df__['Elevation'] < dep2)
+            self.staz_df_r = staz_df__[mask_dep]
             # resize earthquake
             ev_copy_cat = Catalog()
             for eq in ev_cat:
@@ -1449,9 +1449,9 @@ c velocity grids have the same spatial dimension, but can
 c have different node densities. Interface grids have the
 c same node distribution.
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-{-float(self.min_dep.get())}       {-float(self.max_dep.get())}       c: Radial range (top-bottom) of grid (km)
-{self.max_lat.get()}   {self.min_lat.get()}         c: Latitudinal range (N-S) of grid (degrees)
-{self.min_lon.get()}   {self.max_lon.get()}         c: Longitudinal range (E-W) of grid (degrees)
+{-float(self.min_dep.get())+0.2}       {-float(self.max_dep.get())-0.2}       c: Radial range (top-bottom) of grid (km)
+{float(self.max_lat.get())+0.2}   {float(self.min_lat.get())-0.2}         c: Latitudinal range (N-S) of grid (degrees)
+{float(self.min_lon.get())-0.2}   {float(self.max_lon.get())+0.2}         c: Longitudinal range (E-W) of grid (degrees)
 6371.0                c: Earth radius
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Set up propagation grid file
@@ -1510,9 +1510,9 @@ c Set up interface grid for interface 1
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 0                     c: Obtain grid from external file (0=no,1=yes)
 interface1.z          c: External interface grid file (option 1)
-{-(float(self.min_dep.get()))-1}                   c: Height of NW grid point (option 0)
-{-(float(self.min_dep.get()))-1}                   c: Height of NE grid point (option 0)
-{-(float(self.min_dep.get()))-1}                   c: Height of SW grid point (option 0)
+{-(float(self.min_dep.get()))-0.2}                   c: Height of NW grid point (option 0)
+{-(float(self.min_dep.get()))-0.2}                   c: Height of NE grid point (option 0)
+{-(float(self.min_dep.get()))-0.2}                   c: Height of SW grid point (option 0)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Optionally apply random structure to interface 1
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1541,9 +1541,9 @@ c Set up interface grid for interface 2
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 0                     c: Obtain grid from external file (0=no,1=yes)
 interface2.z          c: External interface grid file (option 1)
-{-(float(self.max_dep.get()))+1}                 c: Height of NW grid point (option 0)
-{-(float(self.max_dep.get()))+1}                 c: Height of NE grid point (option 0)
-{-(float(self.max_dep.get()))+1}                 c: Height of SW grid point (option 0)
+{-(float(self.max_dep.get()))+0.2}                 c: Height of NW grid point (option 0)
+{-(float(self.max_dep.get()))+0.2}                 c: Height of NE grid point (option 0)
+{-(float(self.max_dep.get()))+0.2}                 c: Height of SW grid point (option 0)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Optionally apply random structure to interface 2
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1585,9 +1585,9 @@ c velocity grids have the same spatial dimension, but can
 c have different node densities. Interface grids have the
 c same node distribution.
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-{-float(self.min_dep.get())}       {-float(self.max_dep.get())}       c: Radial range (top-bottom) of grid (km)
-{self.max_lat.get()}   {self.min_lat.get()}         c: Latitudinal range (N-S) of grid (degrees)
-{self.min_lon.get()}   {self.max_lon.get()}         c: Longitudinal range (E-W) of grid (degrees)
+{-float(self.min_dep.get())+0.2}       {-float(self.max_dep.get())-0.2}       c: Radial range (top-bottom) of grid (km)
+{float(self.max_lat.get())+0.2}   {float(self.min_lat.get())-0.2}         c: Latitudinal range (N-S) of grid (degrees)
+{float(self.min_lon.get())-0.2}   {float(self.max_lon.get())+0.2}         c: Longitudinal range (E-W) of grid (degrees)
 6371.0                c: Earth radius
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Set up propagation grid file
@@ -1646,9 +1646,9 @@ c Set up interface grid for interface 1
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 0                     c: Obtain grid from external file (0=no,1=yes)
 interface1.z          c: External interface grid file (option 1)
-{-(float(self.min_dep.get()))-1}                   c: Height of NW grid point (option 0)
-{-(float(self.min_dep.get()))-1}                   c: Height of NE grid point (option 0)
-{-(float(self.min_dep.get()))-1}                   c: Height of SW grid point (option 0)
+{-(float(self.min_dep.get()))-0.2}                   c: Height of NW grid point (option 0)
+{-(float(self.min_dep.get()))-0.2}                   c: Height of NE grid point (option 0)
+{-(float(self.min_dep.get()))-0.2}                   c: Height of SW grid point (option 0)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Optionally apply random structure to interface 1
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1677,9 +1677,9 @@ c Set up interface grid for interface 2
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 0                     c: Obtain grid from external file (0=no,1=yes)
 interface2.z          c: External interface grid file (option 1)
-{-(float(self.max_dep.get()))+1}                 c: Height of NW grid point (option 0)
-{-(float(self.max_dep.get()))+1}                 c: Height of NE grid point (option 0)
-{-(float(self.max_dep.get()))+1}                 c: Height of SW grid point (option 0)
+{-(float(self.max_dep.get()))+0.2}                 c: Height of NW grid point (option 0)
+{-(float(self.max_dep.get()))+0.2}                 c: Height of NE grid point (option 0)
+{-(float(self.max_dep.get()))+0.2}                 c: Height of SW grid point (option 0)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Optionally apply random structure to interface 2
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
