@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Removing old files"
-rm arrivals.dat arrtimes.dat frechet.dat gridsave.in interfaces.in mtimes.dat otimes.dat rays.dat receivers.in residuals.dat rtimes.dat sources.in
+rm arrivals.dat arrtimes.dat frechet.dat gridsave.in mtimes.dat otimes.dat rays.dat residuals.dat rtimes.dat
 echo "Creating gridsave.in from $1"
 n=$(head -n 1 $1)
 touch gridsave.in
