@@ -28,6 +28,7 @@ mkdir -p P_images
 mkdir -p P_images/absolute
 mkdir -p P_images/relative
 mv gmtslicei.in gmtslicei.in.or
+cp ../mkmodel/reference_velocity.txt ../vgridsref.in
 # absolute velocity
 velocity=velabsolute.cpt
 cp gmtsliceiP.in gmtsliceiZ.in
@@ -462,6 +463,7 @@ mkdir -p S_images
 mkdir -p S_images/absolute
 mkdir -p S_images/relative
 mv gmtslicei.in gmtslicei.in.or
+cp ../mkmodel/reference_velocity.txt ../vgridsref.in
 # absolute velocity
 velocity=velabsolute.cpt
 cp gmtsliceiS.in gmtsliceiZ.in
