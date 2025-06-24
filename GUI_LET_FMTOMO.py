@@ -1773,7 +1773,7 @@ propgrid.in                 c: File containing propagation grid parameters
             o.write(grid3dgiS)
         with open(f"{self.fmtomo_path}/invert_p/invert3d.in", 'w') as o:
             o.write(invert3dP)
-        with open(f"{self.fmtomo_path}/invert_s/mkmodel/invert3d.in", 'w') as o:
+        with open(f"{self.fmtomo_path}/invert_s/invert3d.in", 'w') as o:
             o.write(invert3dS)
 
     def reset_GUI(self, entries, buttons, comboboxes):
