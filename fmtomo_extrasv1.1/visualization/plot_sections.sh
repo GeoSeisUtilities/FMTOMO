@@ -289,9 +289,9 @@ do
             gmt coast $bounds $proj -B -Glightgray -Na0.5 -B+glightblue -W0.3p,black
         gmt subplot end
     gmt end
-    mv HOR.ps P_images/absolute/HOR_$NZ.ps
-    mv HOR.pdf P_images/absolute/HOR_$NZ.pdf
-    mv HOR.png P_images/absolute/HOR_$NZ.png
+    mv HOR.ps P_images/relative/HOR_$NZ.ps
+    mv HOR.pdf P_images/relative/HOR_$NZ.pdf
+    mv HOR.png P_images/relative/HOR_$NZ.png
     rm gmtslicei.in
 done < DEPTH
 rm gmtsliceiZ.in
@@ -343,9 +343,9 @@ do
             gmt psxy receiversns.xy $bounds $proj -Sa0.20c -Gred -N -W0.3p,black
         gmt subplot end
     gmt end
-    mv EW.ps P_images/absolute/EW_$NY.ps
-    mv EW.pdf P_images/absolute/EW_$NY.pdf
-    mv EW.png P_images/absolute/EW_$NY.png
+    mv EW.ps P_images/relative/EW_$NY.ps
+    mv EW.pdf P_images/relative/EW_$NY.pdf
+    mv EW.png P_images/relative/EW_$NY.png
     rm gmtslicei.in
 done < LATY
 rm gmtsliceiZ.in
@@ -396,9 +396,9 @@ do
             gmt psxy receiversew.xy $bounds $proj -Sa0.20c -Gred -N -W0.3p,black
         gmt subplot end
     gmt end
-    mv SN.ps P_images/absolute/SN_$NX.ps
-    mv SN.pdf P_images/absolute/SN_$NX.pdf
-    mv SN.png P_images/absolute/SN_$NX.png
+    mv SN.ps P_images/relative/SN_$NX.ps
+    mv SN.pdf P_images/relative/SN_$NX.pdf
+    mv SN.png P_images/relative/SN_$NX.png
     rm gmtslicei.in
 done < LONGY
 rm gmtsliceiZ.in
@@ -448,9 +448,9 @@ do
             gmt psxy receiversgc.xy $bounds $proj -Sa0.20c -Gred -N -W0.3p,black
         gmt subplot end
     gmt end
-    mv GC.ps P_images/absolute/GC_$SezName.ps
-    mv GC.pdf P_images/absolute/GC_$SezName.pdf
-    mv GC.png P_images/absolute/GC_$SezName.png
+    mv GC.ps P_images/relative/GC_$SezName.ps
+    mv GC.pdf P_images/relative/GC_$SezName.pdf
+    mv GC.png P_images/relative/GC_$SezName.png
     rm gmtslicei.in
 done < Section_coordinates
 mv gmtslicei.in.or gmtslicei.in
@@ -721,9 +721,9 @@ do
             gmt coast $bounds $proj -B -Glightgray -Na0.5 -B+glightblue -W0.3p,black
         gmt subplot end
     gmt end
-    mv HOR.ps S_images/absolute/HOR_$NZ.ps
-    mv HOR.pdf S_images/absolute/HOR_$NZ.pdf
-    mv HOR.png S_images/absolute/HOR_$NZ.png
+    mv HOR.ps S_images/relative/HOR_$NZ.ps
+    mv HOR.pdf S_images/relative/HOR_$NZ.pdf
+    mv HOR.png S_images/relative/HOR_$NZ.png
     rm gmtslicei.in
 done < DEPTH
 rm gmtsliceiZ.in
@@ -774,9 +774,9 @@ do
             gmt psxy receiversns.xy $bounds $proj -Sa0.20c -Gred -N -W0.3p,black
         gmt subplot end
     gmt end
-    mv EW.ps S_images/absolute/EW_$NY.ps
-    mv EW.pdf S_images/absolute/EW_$NY.pdf
-    mv EW.png S_images/absolute/EW_$NY.png
+    mv EW.ps S_images/relative/EW_$NY.ps
+    mv EW.pdf S_images/relative/EW_$NY.pdf
+    mv EW.png S_images/relative/EW_$NY.png
     rm gmtslicei.in
 done < LATY
 rm gmtsliceiZ.in
@@ -827,9 +827,9 @@ do
             gmt psxy receiversew.xy $bounds $proj -Sa0.20c -Gred -N -W0.3p,black
         gmt subplot end
     gmt end
-    mv SN.ps S_images/absolute/SN_$NX.ps
-    mv SN.pdf S_images/absolute/SN_$NX.pdf
-    mv SN.png S_images/absolute/SN_$NX.png
+    mv SN.ps S_images/relative/SN_$NX.ps
+    mv SN.pdf S_images/relative/SN_$NX.pdf
+    mv SN.png S_images/relative/SN_$NX.png
     rm gmtslicei.in
 done < LONGY
 rm gmtsliceiZ.in
@@ -879,9 +879,9 @@ do
             gmt psxy receiversgc.xy $bounds $proj -Sa0.20c -Gred -N -W0.3p,black
         gmt subplot end
     gmt end
-    mv GC.ps S_images/absolute/GC_$SezName.ps
-    mv GC.pdf S_images/absolute/GC_$SezName.pdf
-    mv GC.png S_images/absolute/GC_$SezName.png
+    mv GC.ps S_images/relative/GC_$SezName.ps
+    mv GC.pdf S_images/relative/GC_$SezName.pdf
+    mv GC.png S_images/relative/GC_$SezName.png
     rm gmtslicei.in
 done < Section_coordinates
 mv gmtslicei.in.or gmtslicei.in
