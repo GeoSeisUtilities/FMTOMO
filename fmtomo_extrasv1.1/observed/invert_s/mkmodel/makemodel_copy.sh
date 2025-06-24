@@ -9,6 +9,7 @@ cp otimes.dat otimesref.dat
 echo "preparing model geometry"
 grid3dgi
 cp vgrids.in vgridsref.in
+cp vgridsref.in reference_velocity.txt
 cp interfaces.in interfacesref.in
 echo "copying files"
 cp sources* ../

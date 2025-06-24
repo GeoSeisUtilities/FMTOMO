@@ -8,9 +8,9 @@ Created on Thu May  8 17:42:27 2025
 ## Read output of FMTOMO and produce x,y,z,v text files for easier visulization
 
 # Setting input
-folder_path = '/home/donato/software_aggiunti/fmtomo/example/'
+folder_path = '/home/donato/Scaricati/observed/'
 sez_strike = 45 # angle from North
-sez_spacing = 10 # km
+sez_spacing = 20 # km
 
 # Importing modules
 import os
@@ -222,9 +222,15 @@ def line_intersection(p1, p2, q1, q2):
 # Formatting data in new format
 LATs, LATe, LONs, LONe, Zs, Ze = get_grid(f'{folder_path}/invert_p/mkmodel/grid3dgi.in')
 Pvelocity = get_velocity(f'{folder_path}/invert_p/vgrids.in')
-Pvelocity_ref = get_velocity(f'{folder_path}/invert_p/vgridsref.in')
+try:
+    Pvelocity_ref = get_velocity(f'{folder_path}/invert_p/mkmodel/reference_velocity.txt')
+except:
+    Pvelocity_ref = get_velocity(f'{folder_path}/invert_p/vgridsref.in')
 Svelocity = get_velocity(f'{folder_path}/invert_s/vgrids.in')
-Svelocity_ref = get_velocity(f'{folder_path}/invert_s/vgridsref.in')
+try:
+    Svelocity_ref = get_velocity(f'{folder_path}/invert_s/mkmodel/reference_velocity.txt')
+except:
+    Svelocity_ref = get_velocity(f'{folder_path}/invert_s/vgridsref.in')
 source = get_sources(f'{folder_path}/invert_p/sources.in')
 source_ref = get_sources(f'{folder_path}/invert_p/sourcesref.in')
 receivers = get_sources(f'{folder_path}/invert_p/receivers.in')

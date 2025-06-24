@@ -21,4 +21,16 @@ cp ../arrivals.dat ./
 synthdatai
 cp src.dat ../
 cp otimes.dat otimesref.dat
-cp otimesref.dat ../
+old_s="1                     c: Add random structure"
+new_s="0                     c: Add random structure"
+sed -i "s/$old_s/$new_s/g" grid3dgi.in
+old_s="1                     c: Add checkerboard"
+new_s="0                     c: Add checkerboard"
+sed -i "s/$old_s/$new_s/g" grid3dgi.in
+old_s="1                     c: Apply spikes"
+new_s="0                     c: Apply spikes"
+sed -i "s/$old_s/$new_s/g" grid3dgi.in
+grid3dgi
+cp vgrids.in vgridsref.in
+cp vgrids* ../
+cp otimes* ../
