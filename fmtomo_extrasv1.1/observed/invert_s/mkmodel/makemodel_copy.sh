@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "preparing earthquake data"
-rm sources.in sourcesref.in receivers.in receiversref.in otimes.dat otimesref.dat vgrids.in vgridsref.in interfaces.in interfacesref.in src.dat
+rm sources.in sourcesref.in receivers.in receiversref.in otimes.dat otimesref.dat vgrids.in vgridsref.in interfaces.in interfacesref.in src.dat reference_velocity.txt
 obsdatai
 cp sources.in sourcesref.in
 cp receivers.in receiversref.in

@@ -19,8 +19,13 @@ import numpy as np
 import math
 from geographiclib.geodesic import Geodesic
 import pygmt
+import utm
 
 # Defining functions
+def project_points(lat, lon):
+    km_lon, km_lat, zone, proj_code = utm.from_latlon(lat, lon)
+    return km_lat, km_lon
+
 def get_grid(grid3dgi):
     with open(grid3dgi) as o:
         _ = [o.readline() for i in range(16)]
@@ -99,9 +104,9 @@ def get_velocity(vgrids):
     lat = LATs
     depth = Ze
     w = 0
-    velocity_grid = pd.DataFrame(columns=["Lon(°)", "Lat(°)", "Dep(km)", 
-                    "Dep(m)", "Vel(km/s)", "LonSpacing(°)" , "LatSpacing(°)", 
-                    "DepSpacing(km)", "DepSpacing(m)", "n_lon", "n_lat", "n_dep"])
+    velocity_grid = pd.DataFrame(columns=["Lon (°)", "Lon (m)","Lat (°)", "Lat (m)",
+                    "Dep (km)", "Dep (m)", "Vel (km/s)", "LonSpacing (°)", "LatSpacing (°)", 
+                    "DepSpacing (km)", "DepSpacing (m)", "n_lon", "n_lat", "n_dep"])
     for i in range(n_rad):
         if i == 0:
             depth = Ze
@@ -117,8 +122,9 @@ def get_velocity(vgrids):
                     lon = LONs
                 else:
                     lon = lon + spac_lon
-                velocity_grid.loc[len(velocity_grid)] = [lon, lat, depth,
-                                    depth*1000, float(l[w]), spac_lon, spac_lat,
+                km_lat, km_lon = project_points(lat, lon)
+                velocity_grid.loc[len(velocity_grid)] = [lon, km_lon, lat, km_lat, 
+                                    depth, depth*1000, float(l[w]), spac_lon, spac_lat,
                                     spac_rad, spac_rad*1000, n_lon, n_lat, n_rad]
                 w += 1
     return velocity_grid
@@ -126,20 +132,27 @@ def get_velocity(vgrids):
 def get_sources(source):
     with open(source) as o:
         ll = o.readlines()
-    source_loc = pd.DataFrame(columns=["Dep(km)", "Dep(m)", "Lat(°)", "Lon(°)",
-                              "ErrDep(km)", "ErrDep(m)", "ErrLat(°)", "ErrLon(°)"])
+    source_loc = pd.DataFrame(columns=["Dep (km)", "Dep (m)", "Lat (°)", "Lat (m)",
+                            "Lon (°)", "Lon (m)", "ErrDep (km)", "ErrDep (m)",
+                            "ErrLat (°)", "ErrLon (°)"])
     for l in ll:
         l = l.split(' ')
         if (len(l)-l.count('')) >= 3:
             while '' in l:
                 l.remove('')
             if len(l) > 4:
+                lat = float(l[1])
+                lon = float(l[2])
+                km_lat, km_lon = project_points(lat, lon)
                 source_loc.loc[len(source_loc)] = [-float(l[0]), -float(l[0])*1000,
-                            float(l[1]), float(l[2]), float(l[3]), float(l[3])*1000,
+                            lat, km_lat, lon, km_lon, float(l[3]), float(l[3])*1000,
                             float(l[4]), float(l[5])]
             else:
+                lat = float(l[1])
+                lon = float(l[2])
+                km_lat, km_lon = project_points(lat, lon)
                 source_loc.loc[len(source_loc)] = [-float(l[0]), -float(l[0])*1000,
-                            float(l[1]), float(l[2]), 0, 0 ,0, 0]
+                            lat, km_lat, lon, km_lon, 0, 0 ,0, 0]
     return source_loc
 
 def haversine(lat1, lon1, lat2, lon2):
@@ -223,14 +236,16 @@ def line_intersection(p1, p2, q1, q2):
 LATs, LATe, LONs, LONe, Zs, Ze = get_grid(f'{folder_path}/invert_p/mkmodel/grid3dgi.in')
 Pvelocity = get_velocity(f'{folder_path}/invert_p/vgrids.in')
 try:
-    Pvelocity_ref = get_velocity(f'{folder_path}/invert_p/mkmodel/reference_velocity.txt')
+    Pvelocity_synth = get_velocity(f'{folder_path}/invert_p/mkmodel/reference_velocity.txt')
 except:
-    Pvelocity_ref = get_velocity(f'{folder_path}/invert_p/vgridsref.in')
+    pass
+Pvelocity_ref = get_velocity(f'{folder_path}/invert_p/vgridsref.in')
 Svelocity = get_velocity(f'{folder_path}/invert_s/vgrids.in')
 try:
-    Svelocity_ref = get_velocity(f'{folder_path}/invert_s/mkmodel/reference_velocity.txt')
+    Svelocity_synth = get_velocity(f'{folder_path}/invert_s/mkmodel/reference_velocity.txt')
 except:
-    Svelocity_ref = get_velocity(f'{folder_path}/invert_s/vgridsref.in')
+    pass
+Svelocity_ref = get_velocity(f'{folder_path}/invert_s/vgridsref.in')
 source = get_sources(f'{folder_path}/invert_p/sources.in')
 source_ref = get_sources(f'{folder_path}/invert_p/sourcesref.in')
 receivers = get_sources(f'{folder_path}/invert_p/receivers.in')
@@ -247,12 +262,22 @@ if not os.path.exists(path+'output_files/'):
 path = path + 'output_files/'
 Pvelocity.to_csv(path+'Pvelocity.csv', index=False)
 Pvelocity_ref.to_csv(path+'Pvelocity_ref.csv', index=False)
+try:
+    Pvelocity_synth.to_csv(path+'Pvelocity_synth.csv', index=False)
+except:
+    pass
 Svelocity.to_csv(path+'Svelocity.csv', index=False)
 Svelocity_ref.to_csv(path+'Svelocity_ref.csv', index=False)
-receivers.to_csv(path+'Receivers.csv', index=False)
-receivers_ref.to_csv(path+'Receivers_ref.csv', index=False)
-source.to_csv(path+'Source.csv', index=False)
-source_ref.to_csv(path+'Source_ref.csv', index=False)
+try:
+    Svelocity_synth.to_csv(path+'Svelocity_synth.csv', index=False)
+except:
+    pass
+source.to_csv(path+'Receivers.csv', index=False)
+source_ref.to_csv(path+'Receivers_ref.csv', index=False)
+receivers.drop_duplicates(inplace=True)
+receivers_ref.drop_duplicates(inplace=True)
+receivers.to_csv(path+'Source.csv', index=False)
+receivers_ref.to_csv(path+'Source_ref.csv', index=False)
 try:
     source_reloc.to_csv(path+'Source_reloc.csv', index=False)
 except:
@@ -362,6 +387,7 @@ pygmt.config(MAP_FRAME_TYPE="plain")
 fig.basemap(region=region, projection=f"M{proj_x}/{proj_y}c", frame=True)
 fig.coast(land="lightgrey", water="lightblue", shorelines="0.5p,black")
 fig.plot(data=np.array([[LONs,LATs,LONe,LATe]]), style='r+s', pen="3p,blue")
+coor_dict.pop(list(coor_dict.keys())[-1])
 for sec in coor_dict.keys():
     start_x = coor_dict[sec]["x_start"]
     start_y = coor_dict[sec]["y_start"]
@@ -380,11 +406,11 @@ with open(path+'Section_coordinates', 'w') as o:
     for i in coor_dict.keys():
         line = coor_dict[i]
         o.write(f'{line["y_start"]} {line["x_start"]} {line["y_end"]} {line["x_end"]} {line["sez_length"]} {i} \n')
-xp = np.unique(Pvelocity["Lon(°)"].values)
+xp = np.unique(Pvelocity["Lon (°)"].values)
 xp.tofile(path+'LONGY', sep='\n')
-yp = np.unique(Pvelocity["Lat(°)"].values)
+yp = np.unique(Pvelocity["Lat (°)"].values)
 yp.tofile(path+'LATY', sep='\n')
-zp = np.unique(Pvelocity["Dep(km)"].values)
+zp = np.unique(Pvelocity["Dep (km)"].values)
 zp.tofile(path+'DEPTH', sep='\n')
 with open(path+'Area_boundaries', 'w') as o:
     o.write(f'{LONs}\n{LONe}\n{LATs}\n{LATe}\n')
